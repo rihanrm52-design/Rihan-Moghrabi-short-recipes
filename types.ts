@@ -1,3 +1,4 @@
+
 export type Category = 'main' | 'sweets' | 'diet';
 export type Language = 'ar' | 'he';
 
@@ -27,6 +28,8 @@ export interface Recipe {
     ingredients: string[];
     steps: string[];
     prepTime: string;
+    author: string;
+    city: string;
   }>>;
 }
 
@@ -76,4 +79,8 @@ export interface Translation {
   enterTitleAlert: string;
   clickToChangePhoto: string;
   guest: string;
+  contactUs: string;
+  close: string;
+  copyEmail: string;
+  emailCopied: string;
 }

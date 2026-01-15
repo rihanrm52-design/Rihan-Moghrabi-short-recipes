@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Recipe } from "./types";
 
@@ -45,8 +44,13 @@ export async function generateQuickRecipe(title: string, lang: 'ar' | 'he') {
 export async function translateRecipeContent(recipe: Recipe, targetLang: 'ar' | 'he') {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const model = 'gemini-3-flash-preview';
-  const prompt = `Translate the following recipe to ${targetLang === 'ar' ? 'Arabic' : 'Hebrew'}. Preserve the list format. Return as JSON.
+  const prompt = `Translate the following recipe to ${targetLang === 'ar' ? 'Arabic' : 'Hebrew'}. 
+  IMPORTANT: Also translate the Author's name and the City name to the target language script.
+  Return as JSON.
+  
   Title: ${recipe.title}
+  Author: ${recipe.author}
+  City: ${recipe.city}
   Ingredients: ${recipe.ingredients.join(', ')}
   Steps: ${recipe.steps.join(' | ')}
   PrepTime: ${recipe.prepTime}`;
@@ -61,6 +65,8 @@ export async function translateRecipeContent(recipe: Recipe, targetLang: 'ar' | 
           type: Type.OBJECT,
           properties: {
             title: { type: Type.STRING },
+            author: { type: Type.STRING },
+            city: { type: Type.STRING },
             ingredients: {
               type: Type.ARRAY,
               items: { type: Type.STRING }
@@ -71,7 +77,7 @@ export async function translateRecipeContent(recipe: Recipe, targetLang: 'ar' | 
             },
             prepTime: { type: Type.STRING }
           },
-          required: ["title", "ingredients", "steps", "prepTime"]
+          required: ["title", "author", "city", "ingredients", "steps", "prepTime"]
         }
       }
     });

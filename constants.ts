@@ -1,6 +1,7 @@
+
 import { Translation, Recipe, Category } from './types';
 
-export const ADMIN_EMAIL = 'admin@kitchen.com';
+export const ADMIN_EMAIL = 'rihan.rm52@gmail.com';
 
 export const TRANSLATIONS: Record<'ar' | 'he', Translation> = {
   ar: {
@@ -8,10 +9,10 @@ export const TRANSLATIONS: Record<'ar' | 'he', Translation> = {
     home: 'الرئيسية',
     mainDishes: 'الأطباق الرئيسية',
     sweets: 'الحلويات',
-    diet: 'دايت وصحي',
+    diet: 'أطباق صحية',
     search: 'ابحث عن وصفة...',
     login: 'تسجيل الدخول',
-    register: 'دخول',
+    register: 'تسجيل',
     logout: 'تسجيل الخروج',
     addRecipe: 'أضف وصفة',
     edit: 'تعديل الوصفة',
@@ -43,22 +44,26 @@ export const TRANSLATIONS: Record<'ar' | 'he', Translation> = {
     translateRecipe: 'ترجمة هذه الوصفة للعربية',
     translating: 'جاري الترجمة...',
     adminBadge: 'أدمن',
-    adminNotice: 'يمكن للأدمن حذف وتعديل أي وصفة.',
+    adminNotice: 'يمكن للأدمن حذف وتعديل أي وصفة. (admin / AR2019)',
     confirmDelete: 'هل أنت متأكد من الحذف؟',
     fastTime: 'سريع جداً',
     enterTitleAlert: 'يرجى إدخال عنوان أولاً',
     clickToChangePhoto: 'انقر لتغيير الصورة',
     guest: 'ضيف',
+    contactUs: 'اتصل بنا',
+    close: 'إغلاق',
+    copyEmail: 'نسخ البريد',
+    emailCopied: 'تم النسخ!',
   },
   he: {
     title: 'המטבח המהיר',
     home: 'דף הבית',
     mainDishes: 'מנות עיקריות',
     sweets: 'קינוחים ומתוקים',
-    diet: 'דיאט ובריאות',
+    diet: 'מנות בריאות',
     search: 'חפש מתכון...',
     login: 'התחברות',
-    register: 'כניסה',
+    register: 'הרשמה',
     logout: 'התנתקות',
     addRecipe: 'הוסף מתכון',
     edit: 'עריכת מתכון',
@@ -85,17 +90,21 @@ export const TRANSLATIONS: Record<'ar' | 'he', Translation> = {
     aiHelp: 'עזרת בינה מלאכותית',
     aiLoading: 'חושב על מתכון קל עבורך...',
     communityRecipes: 'מתכונים נוספים מהקהילה שלנו',
-    addYourOwn: 'שתפו אותנו במתכון המהיר שלכם',
+    addYourOwn: 'שתפו אותנו בממתכון המהיר שלכם',
     uploadPhoto: 'הוסף תמונה למתכון',
     translateRecipe: 'תרגם את המתכון לעברית',
     translating: 'מתרגם...',
     adminBadge: 'אדמין',
-    adminNotice: 'אדמין יכול למחוק ולערוך כל מתכון.',
+    adminNotice: 'אדמין יכול למחוק ולערוך כל מתכון. (admin / AR2019)',
     confirmDelete: 'האם אתה בטוח שברצונך למחוק?',
     fastTime: 'מהיר מאוד',
     enterTitleAlert: 'נא להזין כותרת תחילה',
     clickToChangePhoto: 'לחץ לשינוי תמונה',
     guest: 'אורח',
+    contactUs: 'צור קשר',
+    close: 'סגור',
+    copyEmail: 'העתק אימייל',
+    emailCopied: 'הועתק!',
   },
 };
 
@@ -104,21 +113,23 @@ export const INITIAL_RECIPES: Recipe[] = [
     id: '1',
     title: 'معكرونة سريعة بالجبن',
     category: 'main',
-    ingredients: ['200 جرام معكرونة', 'كوب جبن مبشور', 'ملح وفلفل'],
-    steps: ['اغلي المعكرونة', 'أضف الجبن والبهارات', 'قلب وقدم'],
+    ingredients: ['200 جرام معكرونة', 'كوب جبن مبشور', 'ملح وفلفل', 'ملعقة زبدة'],
+    steps: ['اغلي المعكرونة في ماء مملح', 'صفي المعكرونة وأضف الزبدة والجبن', 'قلب جيداً حتى يذوب الجبن وقدمها ساخنة'],
     prepTime: '10 دقائق',
     author: 'أبو العز',
     city: 'عمان',
     date: '2024-05-20',
     userId: 'admin',
-    imageUrl: 'https://picsum.photos/seed/pasta/400/300',
+    imageUrl: 'https://images.unsplash.com/photo-1546548970-71785318a17b?q=80&w=1000&auto=format&fit=crop',
     originalLang: 'ar',
     translations: {
       he: {
         title: 'פסטה מהירה עם גבינה',
-        ingredients: ['200 גרם פסטה', 'כוס גבינה מגורדת', 'מלח ופלפל'],
-        steps: ['להרתיח את הפסטה', 'להוסיף גבינה ותבלינים', 'לערבב ולהגיש'],
-        prepTime: '10 דקות'
+        ingredients: ['200 גרם פסטה', 'כוס גבינה מגורדת', 'מלח ופלפל', 'כף חמאה'],
+        steps: ['להרתיח את הפסטה במים מומלחים', 'לסנן את הפסטה ולהוסיף חמאה וגבינה', 'לערבב היטב עד שהגבינה נמסה ולהגיש חם'],
+        prepTime: '10 דקות',
+        author: 'אבו אל-עז',
+        city: 'עמאן'
       }
     }
   },
@@ -127,20 +138,46 @@ export const INITIAL_RECIPES: Recipe[] = [
     title: 'פנקייק בננה מהיר',
     category: 'sweets',
     ingredients: ['2 בננות בשלות', '2 ביצים', 'מעט קינמון'],
-    steps: ['למעוך את הבננות', 'לערבב עם הביצים', 'לטגן במחבת קטנה'],
+    steps: ['למעוך את הבננות היטב בקערה', 'לערבב עם הביצים והקינמון עד לקבלת בלילה אחידה', 'לטגן במחבת קטנה עם מעט שמן משני הצדדים'],
     prepTime: '5 דקות',
     author: 'דנה',
     city: 'תל אביב',
     date: '2024-05-21',
     userId: 'admin',
-    imageUrl: 'https://picsum.photos/seed/pancake/400/300',
+    imageUrl: 'https://images.unsplash.com/photo-1567620905732-2d1ec7bb7445?q=80&w=1000&auto=format&fit=crop',
     originalLang: 'he',
     translations: {
       ar: {
         title: 'بان كيك موز سريع',
         ingredients: ['2 موز ناضج', '2 بيض', 'القليل من القرفة'],
-        steps: ['اهرسي الموز', 'اخلطي مع البيض', 'اقلي في مقلاة صغيرة'],
-        prepTime: '5 دقائق'
+        steps: ['اهرسي الموز جيداً في وعاء', 'اخلطي مع البيض والقرفة حتى يتجانس الخليط', 'اقلي في مقلاة صغيرة مع القليل من الزيت من الجهتين'],
+        prepTime: '5 دقائق',
+        author: 'دانا',
+        city: 'تل أبيب'
+      }
+    }
+  },
+  {
+    id: '3',
+    title: 'سلطة خضراء منعشة',
+    category: 'diet',
+    ingredients: ['خيار مفروم', 'بندورة كرزية', 'خس مفروم', 'ليمون وزيت زيتون', 'رشة ملح'],
+    steps: ['قطع جميع الخضار وضعها في طبق واسع', 'أضف الليمون وزيت الزيتون والملح', 'اخلط المكونات جيداً وقدمها فوراً'],
+    prepTime: '5 دقائق',
+    author: 'ريحان',
+    city: 'القدس',
+    date: '2024-05-22',
+    userId: 'admin',
+    imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=1000&auto=format&fit=crop',
+    originalLang: 'ar',
+    translations: {
+      he: {
+        title: 'סלט ירוק מרענן',
+        ingredients: ['מלפפון קצוץ', 'עגבניות שרי', 'חסה קצוצה', 'לימון ושמן זית', 'קורט מלח'],
+        steps: ['לחתוך את כל הירקות ולהניח בקערה רחבה', 'להוסיף לימון, שמן זית ומלח', 'לערבב היטב ולהגיש מיד'],
+        prepTime: '5 דקות',
+        author: 'ריהאן',
+        city: 'ירושלים'
       }
     }
   }
