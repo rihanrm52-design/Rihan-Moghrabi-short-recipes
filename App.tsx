@@ -38,7 +38,6 @@ const BackButton: React.FC<{ lang: Language; text: string }> = ({ lang, text }) 
   const handleBack = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // שימוש ישיר ב-1- הוא הדרך האמינה ביותר ב-react-router לנווט אחורה בהיסטוריה
     navigate(-1);
   };
 
@@ -786,13 +785,25 @@ const Auth: React.FC<{ lang: Language; onLogin: (u: User) => void }> = ({ lang, 
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('ar');
   const [isContactOpen, setIsContactOpen] = useState(false);
+  
+  // Safe user initialization
   const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
+
+  // Safe recipe initialization
   const [recipes, setRecipes] = useState<Recipe[]>(() => {
-    const saved = localStorage.getItem('recipes');
-    return saved ? JSON.parse(saved) : INITIAL_RECIPES;
+    try {
+      const saved = localStorage.getItem('recipes');
+      return saved ? JSON.parse(saved) : INITIAL_RECIPES;
+    } catch {
+      return INITIAL_RECIPES;
+    }
   });
 
   useEffect(() => { 
