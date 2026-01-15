@@ -13,6 +13,7 @@
             font-family: 'Vazirmatn', 'Heebo', sans-serif;
             background-color: #f5f0e6;
             color: #4a3728;
+            margin: 0;
         }
         .vintage-header {
             font-family: 'Amiri', serif;
@@ -29,6 +30,10 @@
             color: #78350f;
         }
     </style>
+    <script>
+        // מניעת קריסה במידה ו-process.env לא מוגדר בדפדפן
+        window.process = window.process || { env: {} };
+    </script>
 <script type="importmap">
 {
   "imports": {
@@ -46,7 +51,6 @@
 </head>
 <body class="bg-warm text-vintage">
     <div id="root"></div>
-    <!-- הוספת נקודת הכניסה לאפליקציה -->
     <script type="module" src="./index.tsx"></script>
 </body>
 </html>
