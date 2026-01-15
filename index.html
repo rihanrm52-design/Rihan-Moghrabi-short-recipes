@@ -14,11 +14,11 @@
             background-color: #f5f0e6;
             color: #4a3728;
             margin: 0;
+            padding: 0;
         }
         .vintage-header {
             font-family: 'Amiri', serif;
         }
-        /* מניעת קפיצות ויזואליות בטעינה */
         #root:empty::after {
             content: "Loading...";
             display: flex;
@@ -31,10 +31,10 @@
         }
     </style>
     <script>
-        // מניעת קריסה במידה ו-process.env לא מוגדר בדפדפן
-        window.process = window.process || { env: {} };
+        // Polyfill for process.env used in the Gemini service
+        window.process = { env: {} };
     </script>
-<script type="importmap">
+    <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@19.0.0",
@@ -49,7 +49,7 @@
 }
 </script>
 </head>
-<body class="bg-warm text-vintage">
+<body class="bg-[#f5f0e6]">
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
 </body>
