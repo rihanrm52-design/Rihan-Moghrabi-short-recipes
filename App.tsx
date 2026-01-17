@@ -140,8 +140,6 @@ const RecipeCard: React.FC<{
   );
 };
 
-// --- App Root Component ---
-
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('ar');
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline'>('syncing');
@@ -151,7 +149,6 @@ const App: React.FC = () => {
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
 
-  // Database Synchronization
   const fetchRecipes = useCallback(async () => {
     setSyncStatus('syncing');
     try {
@@ -170,14 +167,12 @@ const App: React.FC = () => {
 
   useEffect(() => {
     fetchRecipes();
-
     const channel = supabase
       .channel('public:recipes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'recipes' }, () => {
         fetchRecipes();
       })
       .subscribe();
-
     return () => { channel.unsubscribe(); };
   }, [fetchRecipes]);
 
@@ -234,7 +229,6 @@ const App: React.FC = () => {
     <HashRouter>
       <div className={`min-h-screen flex flex-col bg-[#f5f0e6] ${lang === 'he' ? 'font-[Heebo]' : 'font-[Vazirmatn]'}`}>
         <Navbar lang={lang} setLang={setLang} user={user} onLogout={() => setUser(null)} syncStatus={syncStatus} />
-        
         <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
           <Routes>
             <Route path="/" element={<HomeView lang={lang} />} />
@@ -245,7 +239,6 @@ const App: React.FC = () => {
             <Route path="/auth/login" element={<Auth lang={lang} onLogin={setUser} />} />
           </Routes>
         </main>
-
         <footer className="bg-stone-900 text-stone-500 py-12 px-4 text-center">
           <p className="vintage-header text-white text-xl mb-2">QuickCuisine</p>
           <p className="text-xs max-w-xs mx-auto opacity-70 leading-relaxed italic">{TRANSLATIONS[lang].lazySlogan}</p>
@@ -254,8 +247,6 @@ const App: React.FC = () => {
     </HashRouter>
   );
 };
-
-// --- Views ---
 
 const HomeView: React.FC<{ lang: Language }> = ({ lang }) => (
   <div className="text-center py-12">
@@ -285,7 +276,6 @@ const CategoryView = ({ recipes, lang, onDelete, user }: any) => {
   const { catId } = useParams();
   const t = TRANSLATIONS[lang];
   const filtered = recipes.filter((r: any) => r.category === catId);
-  
   return (
     <div>
       <BackButton lang={lang} text={t.back} />
@@ -319,9 +309,7 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
   const recipe = recipes.find((r: any) => r.id === id);
   const t = TRANSLATIONS[lang];
   const [translating, setTranslating] = useState(false);
-
   if (!recipe) return <div className="text-center py-20">{t.noRecipes}</div>;
-  
   const translation = recipe.translations?.[lang] || {
     title: recipe.title,
     ingredients: recipe.ingredients,
@@ -330,9 +318,7 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
     author: recipe.author,
     city: recipe.city
   };
-
   const isOwner = user?.id === recipe.userId || user?.nickname === recipe.author || user?.isAdmin;
-
   const handleTranslate = async () => {
     setTranslating(true);
     const result = await translateRecipeContent(recipe, lang);
@@ -344,19 +330,13 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
     }
     setTranslating(false);
   };
-
   return (
     <div className="max-w-4xl mx-auto">
       <BackButton lang={lang} text={t.back} />
       <div className="bg-white rounded-3xl shadow-xl overflow-hidden mb-12 border border-stone-100">
         <div className="h-[300px] sm:h-[450px] relative">
-          <img 
-            src={recipe.imageUrl || `https://picsum.photos/seed/${recipe.id}/800/600`} 
-            className="w-full h-full object-cover" 
-            alt={translation.title}
-          />
+          <img src={recipe.imageUrl || `https://picsum.photos/seed/${recipe.id}/800/600`} className="w-full h-full object-cover" alt={translation.title}/>
         </div>
-        
         <div className="p-6 sm:p-12">
           <div className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-4 border-b border-stone-100 pb-8">
             <div>
@@ -369,11 +349,7 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
             </div>
             <div className="flex gap-2 shrink-0">
               {recipe.originalLang !== lang && !recipe.translations?.[lang] && (
-                <button 
-                  onClick={handleTranslate} 
-                  disabled={translating} 
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-xl font-bold hover:bg-emerald-100 disabled:opacity-50 cursor-pointer"
-                >
+                <button onClick={handleTranslate} disabled={translating} className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-xl font-bold hover:bg-emerald-100 disabled:opacity-50 cursor-pointer">
                   {translating ? <Loader2 className="w-4 h-4 animate-spin"/> : <Languages className="w-4 h-4"/>}
                   {translating ? t.translating : t.translateRecipe}
                 </button>
@@ -383,17 +359,13 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
                   <Link to={`/edit-recipe/${recipe.id}`} className="p-3 bg-stone-100 rounded-xl text-amber-700 hover:bg-stone-200 transition-colors">
                     <Edit3 className="w-5 h-5"/>
                   </Link>
-                  <button 
-                    onClick={() => { if(window.confirm(t.confirmDelete)) { onDelete(recipe.id); navigate('/'); } }} 
-                    className="p-3 bg-red-50 rounded-xl text-red-600 hover:bg-red-100 transition-colors cursor-pointer"
-                  >
+                  <button onClick={() => { if(window.confirm(t.confirmDelete)) { onDelete(recipe.id); navigate('/'); } }} className="p-3 bg-red-50 rounded-xl text-red-600 hover:bg-red-100 transition-colors cursor-pointer">
                     <Trash2 className="w-5 h-5"/>
                   </button>
                 </>
               )}
             </div>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div>
               <h2 className="text-xl font-bold vintage-header text-amber-800 mb-6 border-b-2 border-amber-50 pb-2">{t.ingredients}</h2>
@@ -437,7 +409,6 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
     prepTime: initialData?.prepTime || '',
     imageUrl: initialData?.imageUrl || ''
   });
-
   const handleAi = async () => {
     if(!formData.title) return alert(t.enterTitleAlert);
     setLoading(true);
@@ -452,7 +423,6 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
     }
     setLoading(false);
   };
-
   const handleSubmit = (e: any) => {
     e.preventDefault();
     const recipe: Recipe = {
@@ -473,89 +443,36 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
     onSubmit(recipe);
     navigate('/');
   };
-
   const inputStyle = "w-full p-4 bg-stone-50 border border-stone-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-medium transition-all";
-
   return (
     <div className="max-w-3xl mx-auto">
       <h1 className="text-3xl font-bold vintage-header text-amber-900 mb-8">{title}</h1>
       <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-10 rounded-3xl shadow-xl space-y-6 border border-stone-100">
         <div className="flex gap-2">
-          <input 
-            required 
-            placeholder={t.placeholderTitle} 
-            className={inputStyle} 
-            value={formData.title} 
-            onChange={e => setFormData({...formData, title: e.target.value})} 
-          />
-          <button 
-            type="button" 
-            onClick={handleAi} 
-            disabled={loading} 
-            className="px-5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-colors cursor-pointer flex items-center justify-center"
-          >
+          <input required placeholder={t.placeholderTitle} className={inputStyle} value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+          <button type="button" onClick={handleAi} disabled={loading} className="px-5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-colors cursor-pointer flex items-center justify-center">
             {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
           </button>
         </div>
-        
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <select className={inputStyle} value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
             <option value="main">{t.mainDishes}</option>
             <option value="sweets">{t.sweets}</option>
             <option value="diet">{t.diet}</option>
           </select>
-          <input 
-            required 
-            placeholder={t.time} 
-            className={inputStyle} 
-            value={formData.prepTime} 
-            onChange={e => setFormData({...formData, prepTime: e.target.value})} 
-          />
+          <input required placeholder={t.time} className={inputStyle} value={formData.prepTime} onChange={e => setFormData({...formData, prepTime: e.target.value})} />
         </div>
-        
-        <input 
-          placeholder="Image URL (Unsplash/Link)" 
-          className={inputStyle} 
-          value={formData.imageUrl} 
-          onChange={e => setFormData({...formData, imageUrl: e.target.value})} 
-        />
-        
+        <input placeholder="Image URL (Unsplash/Link)" className={inputStyle} value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} />
         <div className="space-y-2">
           <label className="text-sm font-bold text-stone-500 px-1">{t.ingredients}</label>
-          <textarea 
-            required 
-            placeholder={t.placeholderIngredients} 
-            rows={5} 
-            className={inputStyle} 
-            value={formData.ingredients} 
-            onChange={e => setFormData({...formData, ingredients: e.target.value})} 
-          />
+          <textarea required placeholder={t.placeholderIngredients} rows={5} className={inputStyle} value={formData.ingredients} onChange={e => setFormData({...formData, ingredients: e.target.value})} />
         </div>
-
         <div className="space-y-2">
           <label className="text-sm font-bold text-stone-500 px-1">{t.steps}</label>
-          <textarea 
-            required 
-            placeholder={t.placeholderSteps} 
-            rows={5} 
-            className={inputStyle} 
-            value={formData.steps} 
-            onChange={e => setFormData({...formData, steps: e.target.value})} 
-          />
+          <textarea required placeholder={t.placeholderSteps} rows={5} className={inputStyle} value={formData.steps} onChange={e => setFormData({...formData, steps: e.target.value})} />
         </div>
-
-        <input 
-          required 
-          placeholder={t.city} 
-          className={inputStyle} 
-          value={formData.city} 
-          onChange={e => setFormData({...formData, city: e.target.value})} 
-        />
-
-        <button 
-          type="submit" 
-          className="w-full py-4 bg-amber-700 text-white font-bold rounded-xl text-lg hover:bg-amber-800 transition-all shadow-md active:scale-95 cursor-pointer"
-        >
+        <input required placeholder={t.city} className={inputStyle} value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
+        <button type="submit" className="w-full py-4 bg-amber-700 text-white font-bold rounded-xl text-lg hover:bg-amber-800 transition-all shadow-md active:scale-95 cursor-pointer">
           {t.submit}
         </button>
       </form>
@@ -574,19 +491,12 @@ const Auth = ({ lang, onLogin }: any) => {
   const t = TRANSLATIONS[lang];
   const navigate = useNavigate();
   const [data, setData] = useState({ nickname: '', password: '' });
-  
   const handle = (e: any) => {
     e.preventDefault();
     const isAdmin = data.nickname === 'admin' && data.password === 'AR2019';
-    onLogin({ 
-      id: data.nickname, 
-      nickname: data.nickname, 
-      isAdmin,
-      city: isAdmin ? 'Jerusalem' : ''
-    });
+    onLogin({ id: data.nickname, nickname: data.nickname, isAdmin, city: isAdmin ? 'Jerusalem' : '' });
     navigate('/');
   };
-
   return (
     <div className="max-w-md mx-auto py-12">
       <div className="bg-white p-10 rounded-3xl shadow-xl border border-stone-100">
@@ -597,21 +507,8 @@ const Auth = ({ lang, onLogin }: any) => {
         </div>
         <h1 className="text-3xl font-bold vintage-header text-amber-900 text-center mb-8">{t.login}</h1>
         <form onSubmit={handle} className="space-y-6">
-          <input 
-            required 
-            placeholder={t.nickname} 
-            className="w-full p-4 bg-stone-50 border border-stone-200 rounded-xl outline-none" 
-            value={data.nickname} 
-            onChange={e => setData({...data, nickname: e.target.value})} 
-          />
-          <input 
-            required 
-            type="password" 
-            placeholder={t.password} 
-            className="w-full p-4 bg-stone-50 border border-stone-200 rounded-xl outline-none" 
-            value={data.password} 
-            onChange={e => setData({...data, password: e.target.value})} 
-          />
+          <input required placeholder={t.nickname} className="w-full p-4 bg-stone-50 border border-stone-200 rounded-xl outline-none" value={data.nickname} onChange={e => setData({...data, nickname: e.target.value})} />
+          <input required type="password" placeholder={t.password} className="w-full p-4 bg-stone-50 border border-stone-200 rounded-xl outline-none" value={data.password} onChange={e => setData({...data, password: e.target.value})} />
           <button className="w-full py-4 bg-amber-700 text-white font-bold rounded-xl text-lg hover:bg-amber-800 transition-all shadow-md cursor-pointer">
             {t.login}
           </button>
