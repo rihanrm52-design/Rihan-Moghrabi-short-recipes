@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { 
@@ -63,9 +64,10 @@ const Navbar: React.FC<{
         
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
-            {syncStatus === 'synced' && <Check className="w-5 h-5 text-emerald-500" title="Synchronized" />}
-            {syncStatus === 'syncing' && <Loader2 className="w-5 h-5 text-amber-500 animate-spin" title="Syncing..." />}
-            {syncStatus === 'offline' && <Cloud className="w-5 h-5 text-stone-300" title="Offline" />}
+            {/* Fix: Lucide icons do not support the title prop. Wrapped in span to provide tooltips. */}
+            {syncStatus === 'synced' && <span title="Synchronized"><Check className="w-5 h-5 text-emerald-500" /></span>}
+            {syncStatus === 'syncing' && <span title="Syncing..."><Loader2 className="w-5 h-5 text-amber-500 animate-spin" /></span>}
+            {syncStatus === 'offline' && <span title="Offline"><Cloud className="w-5 h-5 text-stone-300" /></span>}
           </div>
 
           <button 
