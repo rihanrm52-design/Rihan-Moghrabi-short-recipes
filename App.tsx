@@ -1,4 +1,4 @@
-// Version 1.0.9 - Build Fix: Removed invalid Lucide icons
+// Version 1.1.0 - Clean Build State
 import React, { useState, useEffect, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { 
