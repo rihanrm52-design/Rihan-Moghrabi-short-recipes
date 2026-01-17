@@ -1,4 +1,4 @@
-// Version 1.0.4 - Fix Build Error
+// Version 1.0.6 - Build Stability & Syntax Fix
 import React, { useState, useEffect, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { 
@@ -310,7 +310,9 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
   const recipe = recipes.find((r: any) => r.id === id);
   const t = TRANSLATIONS[lang];
   const [translating, setTranslating] = useState(false);
+  
   if (!recipe) return <div className="text-center py-20">{t.noRecipes}</div>;
+  
   const translation = recipe.translations?.[lang] || {
     title: recipe.title,
     ingredients: recipe.ingredients,
@@ -319,7 +321,9 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
     author: recipe.author,
     city: recipe.city
   };
+  
   const isOwner = user?.id === recipe.userId || user?.nickname === recipe.author || user?.isAdmin;
+  
   const handleTranslate = async () => {
     setTranslating(true);
     const result = await translateRecipeContent(recipe, lang);
@@ -331,6 +335,7 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
     }
     setTranslating(false);
   };
+
   return (
     <div className="max-w-4xl mx-auto">
       <BackButton lang={lang} text={t.back} />
@@ -410,6 +415,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
     prepTime: initialData?.prepTime || '',
     imageUrl: initialData?.imageUrl || ''
   });
+
   const handleAi = async () => {
     if(!formData.title) return alert(t.enterTitleAlert);
     setLoading(true);
@@ -424,6 +430,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
     }
     setLoading(false);
   };
+
   const handleSubmit = (e: any) => {
     e.preventDefault();
     const recipe: Recipe = {
@@ -444,7 +451,9 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
     onSubmit(recipe);
     navigate('/');
   };
+
   const inputStyle = "w-full p-4 bg-stone-50 border border-stone-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-medium transition-all";
+  
   return (
     <div className="max-w-3xl mx-auto">
       <h1 className="text-3xl font-bold vintage-header text-amber-900 mb-8">{title}</h1>
