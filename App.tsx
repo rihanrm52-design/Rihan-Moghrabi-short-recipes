@@ -20,7 +20,7 @@ import {
   Search
 } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
-import { TRANSLATIONS, INITIAL_RECIPES } from './constants';
+import { TRANSLATIONS } from './constants';
 import { Recipe, User, Language } from './types';
 import { generateQuickRecipe, translateRecipeContent } from './geminiService';
 
