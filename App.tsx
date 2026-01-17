@@ -1,4 +1,4 @@
-// Version 1.2.0 - Final Build Fix
+// Version 1.3.0 - Definitive Build Fix
 import React, { useState, useEffect, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { 
