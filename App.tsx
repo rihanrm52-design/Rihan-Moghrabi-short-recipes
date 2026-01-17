@@ -15,8 +15,8 @@ import {
   Languages,
   Edit3,
   Loader2,
-  CloudCheck,
-  CloudOff,
+  Check,
+  Cloud,
   Search
 } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
@@ -63,9 +63,9 @@ const Navbar: React.FC<{
         
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
-            {syncStatus === 'synced' && <CloudCheck className="w-5 h-5 text-emerald-500" title="Synchronized" />}
+            {syncStatus === 'synced' && <Check className="w-5 h-5 text-emerald-500" title="Synchronized" />}
             {syncStatus === 'syncing' && <Loader2 className="w-5 h-5 text-amber-500 animate-spin" title="Syncing..." />}
-            {syncStatus === 'offline' && <CloudOff className="w-5 h-5 text-stone-300" title="Offline" />}
+            {syncStatus === 'offline' && <Cloud className="w-5 h-5 text-stone-300" title="Offline" />}
           </div>
 
           <button 
@@ -159,7 +159,6 @@ const App: React.FC = () => {
       if (error) throw error;
       if (data) {
         const cloudRecipes = data.map(item => item.data as Recipe);
-        // Sort by date or id descending to show newest first
         setRecipes(cloudRecipes.sort((a, b) => b.id.localeCompare(a.id)));
       }
       setSyncStatus('synced');
@@ -172,7 +171,6 @@ const App: React.FC = () => {
   useEffect(() => {
     fetchRecipes();
 
-    // Subscribe to real-time changes
     const channel = supabase
       .channel('public:recipes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'recipes' }, () => {
@@ -357,9 +355,6 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
             className="w-full h-full object-cover" 
             alt={translation.title}
           />
-          <div className="absolute top-4 right-4 bg-amber-700 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-            {recipe.category === 'main' ? t.mainDishes : recipe.category === 'sweets' ? t.sweets : t.diet}
-          </div>
         </div>
         
         <div className="p-6 sm:p-12">
@@ -497,7 +492,6 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
             type="button" 
             onClick={handleAi} 
             disabled={loading} 
-            title={t.aiHelp}
             className="px-5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-colors cursor-pointer flex items-center justify-center"
           >
             {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
@@ -603,34 +597,25 @@ const Auth = ({ lang, onLogin }: any) => {
         </div>
         <h1 className="text-3xl font-bold vintage-header text-amber-900 text-center mb-8">{t.login}</h1>
         <form onSubmit={handle} className="space-y-6">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-stone-400 px-1">{t.nickname}</label>
-            <input 
-              required 
-              placeholder={t.nickname} 
-              className="w-full p-4 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all" 
-              value={data.nickname} 
-              onChange={e => setData({...data, nickname: e.target.value})} 
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-stone-400 px-1">{t.password}</label>
-            <input 
-              required 
-              type="password" 
-              placeholder={t.password} 
-              className="w-full p-4 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all" 
-              value={data.password} 
-              onChange={e => setData({...data, password: e.target.value})} 
-            />
-          </div>
-          <button className="w-full py-4 bg-amber-700 text-white font-bold rounded-xl text-lg hover:bg-amber-800 transition-all shadow-md active:scale-95 cursor-pointer">
+          <input 
+            required 
+            placeholder={t.nickname} 
+            className="w-full p-4 bg-stone-50 border border-stone-200 rounded-xl outline-none" 
+            value={data.nickname} 
+            onChange={e => setData({...data, nickname: e.target.value})} 
+          />
+          <input 
+            required 
+            type="password" 
+            placeholder={t.password} 
+            className="w-full p-4 bg-stone-50 border border-stone-200 rounded-xl outline-none" 
+            value={data.password} 
+            onChange={e => setData({...data, password: e.target.value})} 
+          />
+          <button className="w-full py-4 bg-amber-700 text-white font-bold rounded-xl text-lg hover:bg-amber-800 transition-all shadow-md cursor-pointer">
             {t.login}
           </button>
         </form>
-        <p className="mt-8 text-xs text-stone-400 text-center leading-relaxed">
-          {t.adminNotice}
-        </p>
       </div>
     </div>
   );
