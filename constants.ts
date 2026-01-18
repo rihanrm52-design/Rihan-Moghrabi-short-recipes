@@ -54,6 +54,8 @@ export const TRANSLATIONS: Record<'ar' | 'he', Translation> = {
     close: 'إغلاق',
     copyEmail: 'نسخ البريد',
     emailCopied: 'تم النسخ!',
+    displayAuthorLabel: 'اسمك الذي سيظهر بالوصفة',
+    placeholderAuthor: 'مثلاً: الشيف علي',
   },
   he: {
     title: 'המטבח המהיר',
@@ -105,6 +107,8 @@ export const TRANSLATIONS: Record<'ar' | 'he', Translation> = {
     close: 'סגור',
     copyEmail: 'העתק אימייל',
     emailCopied: 'הועתק!',
+    displayAuthorLabel: 'השם שלך שיופיע במתכון',
+    placeholderAuthor: 'למשל: השף עלי',
   },
 };
 
@@ -128,7 +132,7 @@ export const INITIAL_RECIPES: Recipe[] = [
         ingredients: ['200 גרם פסטה', 'כוס גבינה מגורדת', 'מלח ופלפל', 'כף חמאה'],
         steps: ['להרתיח את הפסטה במים מומלחים', 'לסנן את הפסטה ולהוסיף חמאה וגבינה', 'לערבב היטב עד שהגבינה נמסה ולהגיש חם'],
         prepTime: '10 דקות',
-        author: 'אבו אל-עז',
+        author: 'אבו אל-عז',
         city: 'עמאן'
       }
     }

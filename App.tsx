@@ -30,8 +30,6 @@ import { Recipe, User, Language } from './types';
 import { generateQuickRecipe, translateRecipeContent } from './geminiService';
 
 // Supabase Configuration
-// NOTE: For RLS, please enable it in your Supabase Dashboard. 
-// Policy: Allow SELECT for everyone, INSERT/UPDATE/DELETE for authenticated users where user_id = auth.uid().
 const SUPABASE_URL = 'https://rykviuyxoydtaathvmkj.supabase.co'; 
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5a3ZpdXl4b3lkdGFhdGh2bWtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NjMzODgsImV4cCI6MjA4NDIzOTM4OH0.UxSttN6ZzfTepTetya8yLae4-F4gANk6M_z4mHeyaqE'; 
 
@@ -39,9 +37,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- Utilities ---
 
-/**
- * Compresses an image file to a max width and specific quality
- */
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -66,7 +61,6 @@ const compressImage = (file: File): Promise<string> => {
         if (!ctx) return reject('Canvas context error');
         
         ctx.drawImage(img, 0, 0, width, height);
-        // Compress as JPEG with 0.6 quality to keep size small
         resolve(canvas.toDataURL('image/jpeg', 0.6));
       };
       img.onerror = () => reject('Image load error');
@@ -473,7 +467,8 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
     steps: initialData?.steps?.join('\n') || '',
     city: initialData?.city || user?.city || '',
     prepTime: initialData?.prepTime || '',
-    imageUrl: initialData?.imageUrl || ''
+    imageUrl: initialData?.imageUrl || '',
+    author: initialData?.author || user?.nickname || ''
   });
 
   const handleAi = async () => {
@@ -517,7 +512,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
       steps: formData.steps.split('\n').map(x => x.trim()).filter(Boolean),
       prepTime: formData.prepTime,
       city: formData.city,
-      author: initialData?.author || user.nickname,
+      author: formData.author,
       date: initialData?.date || new Date().toISOString().split('T')[0],
       userId: user.id,
       imageUrl: formData.imageUrl,
@@ -578,6 +573,11 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
           <button type="button" onClick={handleAi} disabled={loading} className="px-5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-colors cursor-pointer flex items-center justify-center" title={t.aiHelp}>
             {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
           </button>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-stone-500 px-1">{t.displayAuthorLabel}</label>
+          <input required placeholder={t.placeholderAuthor} className={inputStyle} value={formData.author} onChange={e => setFormData({...formData, author: e.target.value})} />
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

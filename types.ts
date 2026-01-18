@@ -7,6 +7,7 @@ export interface User {
   email: string;
   nickname: string;
   isAdmin: boolean;
+  city?: string;
 }
 
 export interface Recipe {
@@ -83,4 +84,6 @@ export interface Translation {
   close: string;
   copyEmail: string;
   emailCopied: string;
+  displayAuthorLabel: string;
+  placeholderAuthor: string;
 }
