@@ -1,6 +1,6 @@
-// Version 1.3.0 - Definitive Build Fix
-import React, { useState, useEffect, useCallback } from 'react';
-import { HashRouter, Routes, Route, Link, useNavigate, useParams, Navigate } from 'react-router-dom';
+// Version 1.5.0 - Image Upload, Compression & RLS Support
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { HashRouter, Routes, Route, Link, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
 import { 
   Utensils, 
   IceCream, 
@@ -18,7 +18,11 @@ import {
   Loader2,
   Check,
   Cloud,
-  Search
+  Search,
+  Camera,
+  Image as ImageIcon,
+  X,
+  Upload
 } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { TRANSLATIONS } from './constants';
@@ -26,10 +30,50 @@ import { Recipe, User, Language } from './types';
 import { generateQuickRecipe, translateRecipeContent } from './geminiService';
 
 // Supabase Configuration
+// NOTE: For RLS, please enable it in your Supabase Dashboard. 
+// Policy: Allow SELECT for everyone, INSERT/UPDATE/DELETE for authenticated users where user_id = auth.uid().
 const SUPABASE_URL = 'https://rykviuyxoydtaathvmkj.supabase.co'; 
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5a3ZpdXl4b3lkdGFhdGh2bWtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NjMzODgsImV4cCI6MjA4NDIzOTM4OH0.UxSttN6ZzfTepTetya8yLae4-F4gANk6M_z4mHeyaqE'; 
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// --- Utilities ---
+
+/**
+ * Compresses an image file to a max width and specific quality
+ */
+const compressImage = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject('Canvas context error');
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        // Compress as JPEG with 0.6 quality to keep size small
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
+      };
+      img.onerror = () => reject('Image load error');
+    };
+    reader.onerror = () => reject('File read error');
+  });
+};
 
 // --- Shared Components ---
 
@@ -109,12 +153,18 @@ const RecipeCard: React.FC<{
   return (
     <div className="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden group relative hover:shadow-md transition-shadow h-full flex flex-col">
       <Link to={`/recipe/${recipe.id}`} className="flex-1">
-        <div className="h-48 overflow-hidden">
-          <img 
-            src={recipe.imageUrl || `https://picsum.photos/seed/${recipe.id}/400/300`} 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-            alt={displayTitle}
-          />
+        <div className="h-48 overflow-hidden bg-stone-100 relative">
+          {recipe.imageUrl ? (
+             <img 
+               src={recipe.imageUrl} 
+               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+               alt={displayTitle}
+             />
+          ) : (
+             <div className="w-full h-full flex items-center justify-center text-stone-300">
+               <ImageIcon className="w-12 h-12" />
+             </div>
+          )}
         </div>
         <div className="p-4">
           <h3 className="font-bold text-stone-800 line-clamp-1 text-lg mb-2">{displayTitle}</h3>
@@ -340,8 +390,14 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
     <div className="max-w-4xl mx-auto">
       <BackButton lang={lang} text={t.back} />
       <div className="bg-white rounded-3xl shadow-xl overflow-hidden mb-12 border border-stone-100">
-        <div className="h-[300px] sm:h-[450px] relative">
-          <img src={recipe.imageUrl || `https://picsum.photos/seed/${recipe.id}/800/600`} className="w-full h-full object-cover" alt={translation.title}/>
+        <div className="h-[300px] sm:h-[450px] relative bg-stone-50">
+          {recipe.imageUrl ? (
+            <img src={recipe.imageUrl} className="w-full h-full object-cover" alt={translation.title}/>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-stone-200">
+              <ImageIcon className="w-24 h-24" />
+            </div>
+          )}
         </div>
         <div className="p-6 sm:p-12">
           <div className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-4 border-b border-stone-100 pb-8">
@@ -405,10 +461,14 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
 const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
   const t = TRANSLATIONS[lang];
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
-    category: initialData?.category || 'main',
+    category: initialData?.category || location.state?.category || 'main',
     ingredients: initialData?.ingredients?.join('\n') || '',
     steps: initialData?.steps?.join('\n') || '',
     city: initialData?.city || user?.city || '',
@@ -429,6 +489,22 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
       }));
     }
     setLoading(false);
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const compressed = await compressImage(file);
+      setFormData(prev => ({ ...prev, imageUrl: compressed }));
+    } catch (err) {
+      console.error("Compression error:", err);
+      alert("Error processing image.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = (e: any) => {
@@ -458,12 +534,52 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
     <div className="max-w-3xl mx-auto">
       <h1 className="text-3xl font-bold vintage-header text-amber-900 mb-8">{title}</h1>
       <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-10 rounded-3xl shadow-xl space-y-6 border border-stone-100">
+        
+        {/* Photo Upload Section */}
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-stone-500 px-1">{t.uploadPhoto}</label>
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className="relative h-64 w-full border-2 border-dashed border-stone-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-stone-50 transition-colors overflow-hidden group"
+          >
+            {formData.imageUrl ? (
+              <>
+                <img src={formData.imageUrl} className="w-full h-full object-cover" alt="Preview" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold gap-2">
+                  <Camera className="w-6 h-6" />
+                  {t.clickToChangePhoto}
+                </div>
+                <button 
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setFormData({...formData, imageUrl: ''}); }}
+                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-stone-400">
+                {uploading ? <Loader2 className="w-12 h-12 animate-spin text-amber-600" /> : <Upload className="w-12 h-12" />}
+                <span className="font-bold">{uploading ? t.aiLoading : t.uploadPhoto}</span>
+              </div>
+            )}
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handleFileChange} 
+            />
+          </div>
+        </div>
+
         <div className="flex gap-2">
           <input required placeholder={t.placeholderTitle} className={inputStyle} value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
-          <button type="button" onClick={handleAi} disabled={loading} className="px-5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-colors cursor-pointer flex items-center justify-center">
+          <button type="button" onClick={handleAi} disabled={loading} className="px-5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-colors cursor-pointer flex items-center justify-center" title={t.aiHelp}>
             {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
           </button>
         </div>
+        
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <select className={inputStyle} value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
             <option value="main">{t.mainDishes}</option>
@@ -472,16 +588,19 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
           </select>
           <input required placeholder={t.time} className={inputStyle} value={formData.prepTime} onChange={e => setFormData({...formData, prepTime: e.target.value})} />
         </div>
-        <input placeholder="Image URL (Unsplash/Link)" className={inputStyle} value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} />
+
         <div className="space-y-2">
           <label className="text-sm font-bold text-stone-500 px-1">{t.ingredients}</label>
           <textarea required placeholder={t.placeholderIngredients} rows={5} className={inputStyle} value={formData.ingredients} onChange={e => setFormData({...formData, ingredients: e.target.value})} />
         </div>
+        
         <div className="space-y-2">
           <label className="text-sm font-bold text-stone-500 px-1">{t.steps}</label>
           <textarea required placeholder={t.placeholderSteps} rows={5} className={inputStyle} value={formData.steps} onChange={e => setFormData({...formData, steps: e.target.value})} />
         </div>
+        
         <input required placeholder={t.city} className={inputStyle} value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
+        
         <button type="submit" className="w-full py-4 bg-amber-700 text-white font-bold rounded-xl text-lg hover:bg-amber-800 transition-all shadow-md active:scale-95 cursor-pointer">
           {t.submit}
         </button>
@@ -523,6 +642,9 @@ const Auth = ({ lang, onLogin }: any) => {
             {t.login}
           </button>
         </form>
+        <p className="mt-6 text-center text-xs text-stone-400 leading-relaxed italic">
+          {t.adminNotice}
+        </p>
       </div>
     </div>
   );
