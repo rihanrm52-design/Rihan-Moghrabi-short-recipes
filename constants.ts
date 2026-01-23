@@ -1,3 +1,4 @@
+
 import { Translation, Recipe, Category } from './types';
 
 export const ADMIN_EMAIL = 'rihan.rm52@gmail.com';
@@ -55,8 +56,13 @@ export const TRANSLATIONS: Record<'ar' | 'he', any> = {
     emailCopied: 'تم النسخ!',
     displayAuthorLabel: 'اسمك الذي سيظهر بالوصفة',
     placeholderAuthor: 'مثلاً: الشيف علي',
-    camera: 'كاميرا',
+    camera: 'الكاميرا',
     gallery: 'المعرض',
+    takePhoto: 'التقاط صورة',
+    retake: 'إعادة الالتقاط',
+    usePhoto: 'استخدام الصورة',
+    cameraError: 'تعذر الوصول إلى الكاميرا. يرجى التأكد من منح الإذن.',
+    shutter: 'تصوير',
   },
   he: {
     title: 'המטבח המהיר',
@@ -112,6 +118,11 @@ export const TRANSLATIONS: Record<'ar' | 'he', any> = {
     placeholderAuthor: 'למשל: השף עלי',
     camera: 'מצלמה',
     gallery: 'גלריה',
+    takePhoto: 'צילום תמונה',
+    retake: 'צילום מחדש',
+    usePhoto: 'השתמש בתמונה',
+    cameraError: 'לא ניתן לגשת למצלמה. נא לוודא שנתת הרשאה.',
+    shutter: 'צילום',
   },
 };
 

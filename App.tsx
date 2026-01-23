@@ -1,4 +1,5 @@
-// Version 1.6.0 - Camera Support & UI Refinement
+
+// Version 1.7.0 - Native In-App Camera Integration
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HashRouter, Routes, Route, Link, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
 import { 
@@ -22,7 +23,8 @@ import {
   Camera,
   Image as ImageIcon,
   X,
-  Upload
+  Upload,
+  RefreshCw
 } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { TRANSLATIONS } from './constants';
@@ -37,36 +39,140 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- Utilities ---
 
-const compressImage = (file: File): Promise<string> => {
+const compressImage = (fileOrDataUrl: File | string): Promise<string> => {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target?.result as string;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        let width = img.width;
-        let height = img.height;
+    const img = new Image();
+    img.src = typeof fileOrDataUrl === 'string' ? fileOrDataUrl : URL.createObjectURL(fileOrDataUrl);
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 800;
+      let width = img.width;
+      let height = img.height;
 
-        if (width > MAX_WIDTH) {
-          height *= MAX_WIDTH / width;
-          width = MAX_WIDTH;
-        }
+      if (width > MAX_WIDTH) {
+        height *= MAX_WIDTH / width;
+        width = MAX_WIDTH;
+      }
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject('Canvas context error');
-        
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.6));
-      };
-      img.onerror = () => reject('Image load error');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject('Canvas context error');
+      
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.6));
     };
-    reader.onerror = () => reject('File read error');
+    img.onerror = () => reject('Image load error');
   });
+};
+
+// --- In-App Camera Component ---
+
+const CameraModal: React.FC<{ 
+  lang: Language; 
+  onCapture: (base64: string) => void; 
+  onClose: () => void;
+}> = ({ lang, onCapture, onClose }) => {
+  const t = TRANSLATIONS[lang];
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+
+  const startCamera = async () => {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' }, 
+        audio: false 
+      });
+      setStream(s);
+      if (videoRef.current) {
+        videoRef.current.srcObject = s;
+      }
+    } catch (err) {
+      console.error("Camera error:", err);
+      setError(t.cameraError);
+    }
+  };
+
+  useEffect(() => {
+    startCamera();
+    return () => {
+      stream?.getTracks().forEach(track => track.stop());
+    };
+  }, []);
+
+  const takePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(video, 0, 0);
+      const dataUrl = canvas.toDataURL('image/jpeg');
+      setCapturedImage(dataUrl);
+    }
+  };
+
+  const handleUsePhoto = async () => {
+    if (capturedImage) {
+      const compressed = await compressImage(capturedImage);
+      onCapture(compressed);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-4">
+      <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors z-50">
+        <X className="w-8 h-8" />
+      </button>
+
+      <div className="relative w-full max-w-md aspect-[3/4] bg-stone-900 rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+        {!capturedImage ? (
+          <>
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline 
+              className="w-full h-full object-cover"
+            />
+            {error && <div className="absolute inset-0 flex items-center justify-center text-red-400 p-8 text-center font-bold bg-black/60">{error}</div>}
+            
+            <div className="absolute bottom-8 inset-x-0 flex justify-center">
+              <button 
+                onClick={takePhoto}
+                className="w-20 h-20 bg-white rounded-full border-4 border-white/30 flex items-center justify-center active:scale-90 transition-transform shadow-xl"
+              >
+                <div className="w-16 h-16 bg-white rounded-full border-2 border-stone-200" />
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <img src={capturedImage} className="w-full h-full object-cover" alt="Captured" />
+            <div className="absolute bottom-8 inset-x-0 flex justify-center gap-4 px-6">
+              <button 
+                onClick={() => setCapturedImage(null)}
+                className="flex-1 py-4 bg-white/20 backdrop-blur-md text-white font-bold rounded-2xl border border-white/20 hover:bg-white/30 transition-colors"
+              >
+                {t.retake}
+              </button>
+              <button 
+                onClick={handleUsePhoto}
+                className="flex-1 py-4 bg-amber-600 text-white font-bold rounded-2xl border border-amber-500 hover:bg-amber-700 transition-colors shadow-lg"
+              >
+                {t.usePhoto}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+      <canvas ref={canvasRef} className="hidden" />
+    </div>
+  );
 };
 
 // --- Shared Components ---
@@ -458,9 +564,9 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   
   const galleryInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
@@ -504,6 +610,11 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
     }
   };
 
+  const handleCameraCapture = (base64: string) => {
+    setFormData(prev => ({ ...prev, imageUrl: base64 }));
+    setShowCamera(false);
+  };
+
   const handleSubmit = (e: any) => {
     e.preventDefault();
     const recipe: Recipe = {
@@ -529,6 +640,14 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
   
   return (
     <div className="max-w-3xl mx-auto">
+      {showCamera && (
+        <CameraModal 
+          lang={lang} 
+          onCapture={handleCameraCapture} 
+          onClose={() => setShowCamera(false)} 
+        />
+      )}
+      
       <h1 className="text-3xl font-bold vintage-header text-amber-900 mb-8">{title}</h1>
       <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-10 rounded-3xl shadow-xl space-y-6 border border-stone-100">
         
@@ -542,7 +661,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
               <>
                 <img src={formData.imageUrl} className="w-full h-full object-cover" alt="Preview" />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-wrap items-center justify-center gap-4 text-white p-4">
-                  <button type="button" onClick={() => cameraInputRef.current?.click()} className="flex flex-col items-center gap-1 hover:scale-110 transition-transform">
+                  <button type="button" onClick={() => setShowCamera(true)} className="flex flex-col items-center gap-1 hover:scale-110 transition-transform">
                     <Camera className="w-8 h-8" />
                     <span className="text-xs font-bold">{t.camera}</span>
                   </button>
@@ -566,10 +685,10 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
                 ) : (
                   <>
                     <div className="flex gap-12 sm:gap-20">
-                      {/* Camera Button */}
+                      {/* Camera Button - Explicitly calls our CameraModal */}
                       <button 
                         type="button" 
-                        onClick={() => cameraInputRef.current?.click()}
+                        onClick={() => setShowCamera(true)}
                         className="flex flex-col items-center gap-3 group/btn"
                       >
                         <div className="p-5 bg-white border border-stone-200 rounded-full group-hover/btn:bg-amber-100 group-hover/btn:border-amber-200 shadow-sm transition-all group-hover/btn:scale-110">
@@ -595,22 +714,12 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
               </div>
             )}
             
-            {/* Hidden Inputs */}
-            {/* Gallery input */}
+            {/* Hidden Input for Gallery */}
             <input 
               type="file" 
               ref={galleryInputRef} 
               className="hidden" 
               accept="image/*" 
-              onChange={handleFileChange} 
-            />
-            {/* Camera input - explicit capture attribute */}
-            <input 
-              type="file" 
-              ref={cameraInputRef} 
-              className="hidden" 
-              accept="image/*" 
-              capture="environment" 
               onChange={handleFileChange} 
             />
           </div>
