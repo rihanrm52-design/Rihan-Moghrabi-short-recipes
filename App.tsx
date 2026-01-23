@@ -1,5 +1,5 @@
 
-// Version 1.8.0 - Reliable Native Camera Integration
+// Version 1.9.0 - High Compatibility Camera & Memory Efficient Processing
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HashRouter, Routes, Route, Link, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
 import { 
@@ -38,35 +38,45 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- Utilities ---
 
+/**
+ * Compresses an image file for storage efficiency.
+ * Uses URL.createObjectURL instead of FileReader for better mobile performance.
+ */
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target?.result as string;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        let width = img.width;
-        let height = img.height;
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
 
-        if (width > MAX_WIDTH) {
-          height *= MAX_WIDTH / width;
-          width = MAX_WIDTH;
-        }
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 1000; // Increased quality slightly
+      let width = img.width;
+      let height = img.height;
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject('Canvas context error');
-        
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.6));
-      };
-      img.onerror = () => reject('Image load error');
+      if (width > MAX_WIDTH) {
+        height *= MAX_WIDTH / width;
+        width = MAX_WIDTH;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        URL.revokeObjectURL(objectUrl);
+        return reject('Canvas context error');
+      }
+      
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      URL.revokeObjectURL(objectUrl);
+      resolve(dataUrl);
     };
-    reader.onerror = () => reject('File read error');
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject('Image load error');
+    };
   });
 };
 
@@ -499,9 +509,11 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
       setFormData(prev => ({ ...prev, imageUrl: compressed }));
     } catch (err) {
       console.error("Compression error:", err);
-      alert("Error processing image.");
+      alert(t.cameraError);
     } finally {
       setUploading(false);
+      // Clear value so the same file can be selected again if needed
+      e.target.value = '';
     }
   };
 
@@ -567,7 +579,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
                 ) : (
                   <>
                     <div className="flex gap-12 sm:gap-20">
-                      {/* Camera Button - Use native capture */}
+                      {/* Camera Button - Use simple capture for maximum compatibility */}
                       <button 
                         type="button" 
                         onClick={() => cameraInputRef.current?.click()}
@@ -597,6 +609,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
             )}
             
             {/* Hidden Inputs */}
+            {/* Using accept="image/*" with a generic capture attribute often works better on Android/iOS than forcing "environment" */}
             <input 
               type="file" 
               ref={galleryInputRef} 
@@ -609,7 +622,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
               ref={cameraInputRef} 
               className="hidden" 
               accept="image/*" 
-              capture="environment" 
+              capture="camera"
               onChange={handleFileChange} 
             />
           </div>
