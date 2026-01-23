@@ -1,4 +1,4 @@
-// Version 1.5.0 - Image Upload, Compression & RLS Support
+// Version 1.6.0 - Camera Support & UI Refinement
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HashRouter, Routes, Route, Link, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
 import { 
@@ -458,7 +458,9 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
@@ -534,35 +536,81 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
         <div className="space-y-2">
           <label className="text-sm font-bold text-stone-500 px-1">{t.uploadPhoto}</label>
           <div 
-            onClick={() => fileInputRef.current?.click()}
-            className="relative h-64 w-full border-2 border-dashed border-stone-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-stone-50 transition-colors overflow-hidden group"
+            className="relative h-64 w-full border-2 border-dashed border-stone-300 rounded-2xl flex flex-col items-center justify-center bg-stone-50/50 hover:bg-stone-50 transition-colors overflow-hidden group"
           >
             {formData.imageUrl ? (
               <>
                 <img src={formData.imageUrl} className="w-full h-full object-cover" alt="Preview" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold gap-2">
-                  <Camera className="w-6 h-6" />
-                  {t.clickToChangePhoto}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-wrap items-center justify-center gap-4 text-white p-4">
+                  <button type="button" onClick={() => cameraInputRef.current?.click()} className="flex flex-col items-center gap-1 hover:scale-110 transition-transform">
+                    <Camera className="w-8 h-8" />
+                    <span className="text-xs font-bold">{t.camera}</span>
+                  </button>
+                  <button type="button" onClick={() => galleryInputRef.current?.click()} className="flex flex-col items-center gap-1 hover:scale-110 transition-transform">
+                    <ImageIcon className="w-8 h-8" />
+                    <span className="text-xs font-bold">{t.gallery}</span>
+                  </button>
                 </div>
                 <button 
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setFormData({...formData, imageUrl: ''}); }}
-                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-10"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </>
             ) : (
-              <div className="flex flex-col items-center gap-2 text-stone-400">
-                {uploading ? <Loader2 className="w-12 h-12 animate-spin text-amber-600" /> : <Upload className="w-12 h-12" />}
-                <span className="font-bold">{uploading ? t.aiLoading : t.uploadPhoto}</span>
+              <div className="flex flex-col items-center gap-6 text-stone-400">
+                {uploading ? (
+                  <Loader2 className="w-12 h-12 animate-spin text-amber-600" />
+                ) : (
+                  <>
+                    <div className="flex gap-12 sm:gap-20">
+                      {/* Camera Button */}
+                      <button 
+                        type="button" 
+                        onClick={() => cameraInputRef.current?.click()}
+                        className="flex flex-col items-center gap-3 group/btn"
+                      >
+                        <div className="p-5 bg-white border border-stone-200 rounded-full group-hover/btn:bg-amber-100 group-hover/btn:border-amber-200 shadow-sm transition-all group-hover/btn:scale-110">
+                           <Camera className="w-10 h-10 text-amber-700" />
+                        </div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-stone-500 group-hover/btn:text-amber-800 transition-colors">{t.camera}</span>
+                      </button>
+
+                      {/* Gallery Button */}
+                      <button 
+                        type="button" 
+                        onClick={() => galleryInputRef.current?.click()}
+                        className="flex flex-col items-center gap-3 group/btn"
+                      >
+                        <div className="p-5 bg-white border border-stone-200 rounded-full group-hover/btn:bg-amber-100 group-hover/btn:border-amber-200 shadow-sm transition-all group-hover/btn:scale-110">
+                           <Upload className="w-10 h-10 text-amber-700" />
+                        </div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-stone-500 group-hover/btn:text-amber-800 transition-colors">{t.gallery}</span>
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
+            
+            {/* Hidden Inputs */}
+            {/* Gallery input */}
             <input 
               type="file" 
-              ref={fileInputRef} 
+              ref={galleryInputRef} 
               className="hidden" 
               accept="image/*" 
+              onChange={handleFileChange} 
+            />
+            {/* Camera input - explicit capture attribute */}
+            <input 
+              type="file" 
+              ref={cameraInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              capture="environment" 
               onChange={handleFileChange} 
             />
           </div>
@@ -622,7 +670,7 @@ const Auth = ({ lang, onLogin }: any) => {
   const [data, setData] = useState({ nickname: '', password: '' });
   const handle = (e: any) => {
     e.preventDefault();
-    const isAdmin = data.nickname === 'admin' && data.password === 'AR2019';
+    const isAdmin = data.nickname === 'admin' && data.password === 'AR2019!';
     onLogin({ id: data.nickname, nickname: data.nickname, isAdmin, city: isAdmin ? 'Jerusalem' : '' });
     navigate('/');
   };

@@ -1,9 +1,8 @@
-
 import { Translation, Recipe, Category } from './types';
 
 export const ADMIN_EMAIL = 'rihan.rm52@gmail.com';
 
-export const TRANSLATIONS: Record<'ar' | 'he', Translation> = {
+export const TRANSLATIONS: Record<'ar' | 'he', any> = {
   ar: {
     title: 'مطبخ المستعجلين',
     home: 'الرئيسية',
@@ -44,7 +43,7 @@ export const TRANSLATIONS: Record<'ar' | 'he', Translation> = {
     translateRecipe: 'ترجمة هذه الوصفة للعربية',
     translating: 'جاري الترجمة...',
     adminBadge: 'أدمن',
-    adminNotice: 'يمكن للأدمن حذف وتعديل أي وصفة. (admin / AR2019)',
+    adminNotice: 'يمكن للأدمن حذف وتعديل أي وصفة. (admin / AR2019!)',
     confirmDelete: 'هل أنت متأكد من الحذف؟',
     fastTime: 'سريع جداً',
     enterTitleAlert: 'يرجى إدخال عنوان أولاً',
@@ -56,6 +55,8 @@ export const TRANSLATIONS: Record<'ar' | 'he', Translation> = {
     emailCopied: 'تم النسخ!',
     displayAuthorLabel: 'اسمك الذي سيظهر بالوصفة',
     placeholderAuthor: 'مثلاً: الشيف علي',
+    camera: 'كاميرا',
+    gallery: 'المعرض',
   },
   he: {
     title: 'המטבח המהיר',
@@ -97,7 +98,7 @@ export const TRANSLATIONS: Record<'ar' | 'he', Translation> = {
     translateRecipe: 'תרגם את המתכון לעברית',
     translating: 'מתרגם...',
     adminBadge: 'אדמין',
-    adminNotice: 'אדמין יכול למחוק ולערוך כל מתכון. (admin / AR2019)',
+    adminNotice: 'אדמין יכול למחוק ולערוך כל מתכון. (admin / AR2019!)',
     confirmDelete: 'האם אתה בטוח שברצונך למחוק?',
     fastTime: 'מהיר מאוד',
     enterTitleAlert: 'נא להזין כותרת תחילה',
@@ -109,6 +110,8 @@ export const TRANSLATIONS: Record<'ar' | 'he', Translation> = {
     emailCopied: 'הועתק!',
     displayAuthorLabel: 'השם שלך שיופיע במתכון',
     placeholderAuthor: 'למשל: השף עלי',
+    camera: 'מצלמה',
+    gallery: 'גלריה',
   },
 };
 
@@ -130,7 +133,7 @@ export const INITIAL_RECIPES: Recipe[] = [
       he: {
         title: 'פסטה מהירה עם גבינה',
         ingredients: ['200 גרם פסטה', 'כוס גבינה מגורדת', 'מלח ופלפל', 'כף חמאה'],
-        steps: ['להרתיח את הפסטה במים מומלחים', 'לסנן את הפסטה ולהוסיף חמאה וגבינה', 'לערבב היטב עד שהגבינה נמסה ולהגיש חם'],
+        steps: ['להרתיח את פסטה במים מומלחים', 'לסנן את הפסטה ולהוסיף חמאה וגבינה', 'לערבב היטב עד שהגבינה נמסה ולהגיש חם'],
         prepTime: '10 דקות',
         author: 'אבו אל-عז',
         city: 'עמאן'

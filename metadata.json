@@ -1,5 +1,7 @@
 {
   "name": "QuickCuisine - Lazy Recipes",
   "description": "A bilingual (Arabic/Hebrew) recipe platform for quick and easy meals, featuring RTL support, vintage aesthetics, and AI-assisted recipe creation.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera"
+  ]
 }
