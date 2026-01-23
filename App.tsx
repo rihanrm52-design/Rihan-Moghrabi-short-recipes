@@ -1,5 +1,5 @@
 
-// Version 2.1.0 - Optimized Native Mobile Camera & Gallery Integration
+// Version 2.2.0 - High Reliability Native Camera Integration
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HashRouter, Routes, Route, Link, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
 import { 
@@ -546,7 +546,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
       <h1 className="text-3xl font-bold vintage-header text-amber-900 mb-8">{title}</h1>
       <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-10 rounded-3xl shadow-xl space-y-6 border border-stone-100">
         
-        {/* Unified Photo Upload Section for Mobile Reliability */}
+        {/* Native Photo Upload Section for Best Mobile Compatibility */}
         <div className="space-y-2">
           <label className="text-sm font-bold text-stone-500 px-1">{t.uploadPhoto}</label>
           <div 
@@ -556,11 +556,11 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
               <div className="relative w-full h-full">
                 <img src={formData.imageUrl} className="w-full h-full object-cover" alt="Preview" />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-12 text-white">
-                  <button type="button" onClick={() => cameraInputRef.current?.click()} className="flex flex-col items-center gap-2 hover:scale-110 transition-transform">
+                  <button type="button" onClick={() => cameraInputRef.current?.click()} className="flex flex-col items-center gap-2 hover:scale-110 transition-transform cursor-pointer">
                     <Camera className="w-12 h-12" />
                     <span className="text-sm font-bold uppercase">{t.camera}</span>
                   </button>
-                  <button type="button" onClick={() => galleryInputRef.current?.click()} className="flex flex-col items-center gap-2 hover:scale-110 transition-transform">
+                  <button type="button" onClick={() => galleryInputRef.current?.click()} className="flex flex-col items-center gap-2 hover:scale-110 transition-transform cursor-pointer">
                     <Upload className="w-12 h-12" />
                     <span className="text-sm font-bold uppercase">{t.gallery}</span>
                   </button>
@@ -568,7 +568,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
                 <button 
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setFormData({...formData, imageUrl: ''}); }}
-                  className="absolute top-4 right-4 p-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-xl z-10"
+                  className="absolute top-4 right-4 p-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-xl z-10 cursor-pointer"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -582,11 +582,11 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
                   </div>
                 ) : (
                   <div className="flex flex-col sm:flex-row gap-8 sm:gap-20">
-                    {/* Dedicated Camera Button */}
+                    {/* Native Camera Intent - Bypasses getUserMedia black screen issues */}
                     <button 
                       type="button" 
                       onClick={() => cameraInputRef.current?.click()}
-                      className="flex flex-col items-center gap-4 group/btn"
+                      className="flex flex-col items-center gap-4 group/btn cursor-pointer"
                     >
                       <div className="p-8 bg-white border-2 border-stone-200 rounded-3xl group-hover/btn:bg-amber-100 group-hover/btn:border-amber-300 shadow-sm transition-all group-hover/btn:scale-110">
                          <Camera className="w-14 h-14 text-amber-800" />
@@ -594,11 +594,11 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
                       <span className="text-md font-bold uppercase tracking-wider text-stone-600 group-hover/btn:text-amber-900 transition-colors">{t.camera}</span>
                     </button>
 
-                    {/* Dedicated Gallery Button */}
+                    {/* Standard Gallery Intent */}
                     <button 
                       type="button" 
                       onClick={() => galleryInputRef.current?.click()}
-                      className="flex flex-col items-center gap-4 group/btn"
+                      className="flex flex-col items-center gap-4 group/btn cursor-pointer"
                     >
                       <div className="p-8 bg-white border-2 border-stone-200 rounded-3xl group-hover/btn:bg-amber-100 group-hover/btn:border-amber-300 shadow-sm transition-all group-hover/btn:scale-110">
                          <Upload className="w-14 h-14 text-amber-800" />
@@ -613,7 +613,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
               </div>
             )}
             
-            {/* Hidden Input for Camera - Uses native capture="environment" for highest reliability */}
+            {/* Hidden Input for Camera - Highest reliability across all mobile OS versions */}
             <input 
               type="file" 
               ref={cameraInputRef} 
@@ -623,7 +623,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
               onChange={handleFileChange} 
             />
             
-            {/* Hidden Input for Gallery - Generic picker */}
+            {/* Hidden Input for Gallery */}
             <input 
               type="file" 
               ref={galleryInputRef} 
