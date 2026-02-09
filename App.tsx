@@ -1,5 +1,5 @@
 
-// Version 2.2.0 - High Reliability Native Camera Integration
+// Version 2.4.0 - Automatic Sync & Camera-Free Implementation
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HashRouter, Routes, Route, Link, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
 import { 
@@ -14,13 +14,11 @@ import {
   User as UserIcon,
   ChevronLeft,
   Sparkles,
-  Languages,
   Edit3,
   Loader2,
   Check,
   Cloud,
   Search,
-  Camera,
   Image as ImageIcon,
   X,
   Upload
@@ -30,7 +28,6 @@ import { TRANSLATIONS } from './constants';
 import { Recipe, User, Language } from './types';
 import { generateQuickRecipe, translateRecipeContent } from './geminiService';
 
-// Supabase Configuration
 const SUPABASE_URL = 'https://rykviuyxoydtaathvmkj.supabase.co'; 
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5a3ZpdXl4b3lkdGFhdGh2bWtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NjMzODgsImV4cCI6MjA4NDIzOTM4OH0.UxSttN6ZzfTepTetya8yLae4-F4gANk6M_z4mHeyaqE'; 
 
@@ -38,10 +35,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- Utilities ---
 
-/**
- * Compresses an image file for storage efficiency.
- * Uses URL.createObjectURL for better performance on mobile browsers.
- */
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -120,7 +113,7 @@ const Navbar: React.FC<{
 
           <button 
             onClick={() => setLang(lang === 'ar' ? 'he' : 'ar')} 
-            className="px-3 py-1 bg-stone-100 rounded-full text-sm border border-stone-200 hover:bg-stone-200 transition-colors font-bold"
+            className="px-4 py-1.5 bg-amber-50 text-amber-900 rounded-full text-sm border border-amber-200 hover:bg-amber-100 transition-colors font-bold shadow-sm"
           >
             {lang === 'ar' ? 'עברית' : 'عربي'}
           </button>
@@ -366,20 +359,17 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
   const t = TRANSLATIONS[lang];
   const [translating, setTranslating] = useState(false);
   
-  if (!recipe) return <div className="text-center py-20">{t.noRecipes}</div>;
-  
-  const translation = recipe.translations?.[lang] || {
-    title: recipe.title,
-    ingredients: recipe.ingredients,
-    steps: recipe.steps,
-    prepTime: recipe.prepTime,
-    author: recipe.author,
-    city: recipe.city
+  const translation = recipe?.translations?.[lang] || {
+    title: recipe?.title,
+    ingredients: recipe?.ingredients,
+    steps: recipe?.steps,
+    prepTime: recipe?.prepTime,
+    author: recipe?.author,
+    city: recipe?.city
   };
-  
-  const isOwner = user?.id === recipe.userId || user?.nickname === recipe.author || user?.isAdmin;
-  
-  const handleTranslate = async () => {
+
+  const handleTranslate = useCallback(async () => {
+    if (!recipe || translating) return;
     setTranslating(true);
     const result = await translateRecipeContent(recipe, lang);
     if (result) {
@@ -389,7 +379,17 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
       });
     }
     setTranslating(false);
-  };
+  }, [recipe, lang, onUpdate, translating]);
+
+  useEffect(() => {
+    if (recipe && recipe.originalLang !== lang && !recipe.translations?.[lang] && !translating) {
+      handleTranslate();
+    }
+  }, [lang, recipe, translating, handleTranslate]);
+  
+  if (!recipe) return <div className="text-center py-20">{t.noRecipes}</div>;
+  
+  const isOwner = user?.id === recipe.userId || user?.nickname === recipe.author || user?.isAdmin;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -407,7 +407,9 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
         <div className="p-6 sm:p-12">
           <div className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-4 border-b border-stone-100 pb-8">
             <div>
-              <h1 className="text-3xl sm:text-5xl font-bold vintage-header text-amber-900 mb-4">{translation.title}</h1>
+              <h1 className="text-3xl sm:text-5xl font-bold vintage-header text-amber-900 mb-4">
+                {translating ? <span className="flex items-center gap-2 italic text-stone-400 text-2xl">{t.translating}...</span> : translation.title}
+              </h1>
               <div className="flex flex-wrap gap-4 text-sm text-stone-500">
                 <span className="flex items-center gap-1.5 bg-stone-50 px-3 py-1.5 rounded-lg border border-stone-100"><Clock className="w-4 h-4 text-amber-600"/> {t.time}: <b>{translation.prepTime}</b></span>
                 <span className="flex items-center gap-1.5 bg-stone-50 px-3 py-1.5 rounded-lg border border-stone-100"><MapPin className="w-4 h-4 text-amber-600"/> {t.city}: <b>{translation.city}</b></span>
@@ -415,12 +417,6 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
               </div>
             </div>
             <div className="flex gap-2 shrink-0">
-              {recipe.originalLang !== lang && !recipe.translations?.[lang] && (
-                <button onClick={handleTranslate} disabled={translating} className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-xl font-bold hover:bg-emerald-100 disabled:opacity-50 cursor-pointer">
-                  {translating ? <Loader2 className="w-4 h-4 animate-spin"/> : <Languages className="w-4 h-4"/>}
-                  {translating ? t.translating : t.translateRecipe}
-                </button>
-              )}
               {isOwner && (
                 <>
                   <Link to={`/edit-recipe/${recipe.id}`} className="p-3 bg-stone-100 rounded-xl text-amber-700 hover:bg-stone-200 transition-colors">
@@ -469,8 +465,8 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
@@ -509,18 +505,17 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
       setFormData(prev => ({ ...prev, imageUrl: compressed }));
     } catch (err) {
       console.error("Image processing error:", err);
-      alert(t.cameraError);
     } finally {
       setUploading(false);
-      // Reset input values to allow re-selection
-      if (cameraInputRef.current) cameraInputRef.current.value = "";
       if (galleryInputRef.current) galleryInputRef.current.value = "";
     }
   };
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
-    const recipe: Recipe = {
+    setSubmitting(true);
+    
+    const recipeBase: Recipe = {
       id: initialData?.id || Date.now().toString(),
       title: formData.title,
       category: formData.category as any,
@@ -535,7 +530,23 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
       originalLang: lang,
       translations: initialData?.translations || {}
     };
-    onSubmit(recipe);
+
+    // SYNC AUTOMATICALLY: Generate translation for the other language before saving
+    const otherLang: Language = lang === 'ar' ? 'he' : 'ar';
+    try {
+      const autoTranslation = await translateRecipeContent(recipeBase, otherLang);
+      if (autoTranslation) {
+        recipeBase.translations = {
+          ...recipeBase.translations,
+          [otherLang]: autoTranslation
+        };
+      }
+    } catch (err) {
+      console.error("Background sync translation failed:", err);
+    }
+
+    await onSubmit(recipeBase);
+    setSubmitting(false);
     navigate('/');
   };
 
@@ -546,97 +557,38 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
       <h1 className="text-3xl font-bold vintage-header text-amber-900 mb-8">{title}</h1>
       <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-10 rounded-3xl shadow-xl space-y-6 border border-stone-100">
         
-        {/* Native Photo Upload Section for Best Mobile Compatibility */}
         <div className="space-y-2">
           <label className="text-sm font-bold text-stone-500 px-1">{t.uploadPhoto}</label>
-          <div 
-            className="relative h-80 w-full border-2 border-dashed border-stone-300 rounded-2xl flex flex-col items-center justify-center bg-stone-50/50 hover:bg-stone-50 transition-colors overflow-hidden group"
-          >
+          <div className="relative h-64 w-full border-2 border-dashed border-stone-300 rounded-2xl flex flex-col items-center justify-center bg-stone-50/50 hover:bg-stone-50 transition-colors overflow-hidden">
             {formData.imageUrl ? (
               <div className="relative w-full h-full">
                 <img src={formData.imageUrl} className="w-full h-full object-cover" alt="Preview" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-12 text-white">
-                  <button type="button" onClick={() => cameraInputRef.current?.click()} className="flex flex-col items-center gap-2 hover:scale-110 transition-transform cursor-pointer">
-                    <Camera className="w-12 h-12" />
-                    <span className="text-sm font-bold uppercase">{t.camera}</span>
-                  </button>
-                  <button type="button" onClick={() => galleryInputRef.current?.click()} className="flex flex-col items-center gap-2 hover:scale-110 transition-transform cursor-pointer">
-                    <Upload className="w-12 h-12" />
-                    <span className="text-sm font-bold uppercase">{t.gallery}</span>
-                  </button>
-                </div>
-                <button 
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setFormData({...formData, imageUrl: ''}); }}
-                  className="absolute top-4 right-4 p-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-xl z-10 cursor-pointer"
-                >
-                  <X className="w-6 h-6" />
+                <button type="button" onClick={() => setFormData({...formData, imageUrl: ''})} className="absolute top-4 right-4 p-2 bg-red-500 text-white rounded-full shadow-lg cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+                <button type="button" onClick={() => galleryInputRef.current?.click()} className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-amber-700 text-white rounded-lg text-sm font-bold shadow-lg">
+                  {t.edit}
                 </button>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-10 w-full px-6 text-center">
+              <button type="button" onClick={() => galleryInputRef.current?.click()} className="flex flex-col items-center gap-3 text-stone-400 hover:text-amber-700 transition-colors">
                 {uploading ? (
-                  <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="w-16 h-16 animate-spin text-amber-600" />
-                    <span className="text-lg font-bold text-stone-500 uppercase tracking-widest">Processing Image...</span>
-                  </div>
+                  <Loader2 className="w-12 h-12 animate-spin text-amber-600" />
                 ) : (
-                  <div className="flex flex-col sm:flex-row gap-8 sm:gap-20">
-                    {/* Native Camera Intent - Bypasses getUserMedia black screen issues */}
-                    <button 
-                      type="button" 
-                      onClick={() => cameraInputRef.current?.click()}
-                      className="flex flex-col items-center gap-4 group/btn cursor-pointer"
-                    >
-                      <div className="p-8 bg-white border-2 border-stone-200 rounded-3xl group-hover/btn:bg-amber-100 group-hover/btn:border-amber-300 shadow-sm transition-all group-hover/btn:scale-110">
-                         <Camera className="w-14 h-14 text-amber-800" />
-                      </div>
-                      <span className="text-md font-bold uppercase tracking-wider text-stone-600 group-hover/btn:text-amber-900 transition-colors">{t.camera}</span>
-                    </button>
-
-                    {/* Standard Gallery Intent */}
-                    <button 
-                      type="button" 
-                      onClick={() => galleryInputRef.current?.click()}
-                      className="flex flex-col items-center gap-4 group/btn cursor-pointer"
-                    >
-                      <div className="p-8 bg-white border-2 border-stone-200 rounded-3xl group-hover/btn:bg-amber-100 group-hover/btn:border-amber-300 shadow-sm transition-all group-hover/btn:scale-110">
-                         <Upload className="w-14 h-14 text-amber-800" />
-                      </div>
-                      <span className="text-md font-bold uppercase tracking-wider text-stone-600 group-hover/btn:text-amber-900 transition-colors">{t.gallery}</span>
-                    </button>
-                  </div>
+                  <>
+                    <Upload className="w-12 h-12" />
+                    <span className="font-bold">{t.gallery}</span>
+                  </>
                 )}
-                {!uploading && (
-                  <p className="text-stone-400 text-sm mt-4 italic">{t.clickToChangePhoto}</p>
-                )}
-              </div>
+              </button>
             )}
-            
-            {/* Hidden Input for Camera - Highest reliability across all mobile OS versions */}
-            <input 
-              type="file" 
-              ref={cameraInputRef} 
-              className="hidden" 
-              accept="image/*" 
-              capture="environment"
-              onChange={handleFileChange} 
-            />
-            
-            {/* Hidden Input for Gallery */}
-            <input 
-              type="file" 
-              ref={galleryInputRef} 
-              className="hidden" 
-              accept="image/*" 
-              onChange={handleFileChange} 
-            />
+            <input type="file" ref={galleryInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
           </div>
         </div>
 
         <div className="flex gap-2">
           <input required placeholder={t.placeholderTitle} className={inputStyle} value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
-          <button type="button" onClick={handleAi} disabled={loading} className="px-5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-colors cursor-pointer flex items-center justify-center" title={t.aiHelp}>
+          <button type="button" onClick={handleAi} disabled={loading} className="px-5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-colors cursor-pointer flex items-center justify-center">
             {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
           </button>
         </div>
@@ -667,8 +619,9 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
         
         <input required placeholder={t.city} className={inputStyle} value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
         
-        <button type="submit" className="w-full py-4 bg-amber-700 text-white font-bold rounded-xl text-lg hover:bg-amber-800 transition-all shadow-md active:scale-95 cursor-pointer">
-          {t.submit}
+        <button type="submit" disabled={submitting} className="w-full py-4 bg-amber-700 text-white font-bold rounded-xl text-lg hover:bg-amber-800 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer">
+          {submitting && <Loader2 className="animate-spin w-6 h-6" />}
+          {submitting ? t.translating : t.submit}
         </button>
       </form>
     </div>
@@ -708,9 +661,7 @@ const Auth = ({ lang, onLogin }: any) => {
             {t.login}
           </button>
         </form>
-        <p className="mt-6 text-center text-xs text-stone-400 leading-relaxed italic">
-          {t.adminNotice}
-        </p>
+        <p className="mt-6 text-center text-xs text-stone-400 leading-relaxed italic">{t.adminNotice}</p>
       </div>
     </div>
   );
