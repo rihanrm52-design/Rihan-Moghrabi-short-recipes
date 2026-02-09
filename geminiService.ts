@@ -1,7 +1,6 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Recipe } from "./types";
-
-// Note: GoogleGenAI client is initialized inside each function call as per the latest guidelines.
 
 export async function generateQuickRecipe(title: string, lang: 'ar' | 'he') {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -44,15 +43,23 @@ export async function generateQuickRecipe(title: string, lang: 'ar' | 'he') {
 export async function translateRecipeContent(recipe: Recipe, targetLang: 'ar' | 'he') {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const model = 'gemini-3-flash-preview';
-  const prompt = `Translate the following recipe to ${targetLang === 'ar' ? 'Arabic' : 'Hebrew'}. 
-  IMPORTANT: Also translate the Author's name and the City name to the target language script.
-  Return as JSON.
   
+  // High-precision prompt for bilingual sync
+  const prompt = `You are a professional culinary translator. Translate this recipe from ${recipe.originalLang === 'ar' ? 'Arabic' : 'Hebrew'} to ${targetLang === 'ar' ? 'Arabic' : 'Hebrew'}.
+  
+  STRICT RULES:
+  1. Translate the Title, Ingredients, and Steps accurately.
+  2. TRANSLITERATE the Author's name and the City name into the ${targetLang === 'ar' ? 'Arabic alphabet' : 'Hebrew alphabet'}. (e.g., "Ali" -> "עלי", "Haifa" -> "חיפה").
+  3. Translate the PrepTime (e.g., "10 minutes" -> "10 דקות").
+  4. Maintain the professional yet simple tone of a "Lazy Recipes" site.
+  5. Return ONLY a valid JSON object.
+
+  DATA TO TRANSLATE:
   Title: ${recipe.title}
   Author: ${recipe.author}
   City: ${recipe.city}
-  Ingredients: ${recipe.ingredients.join(', ')}
-  Steps: ${recipe.steps.join(' | ')}
+  Ingredients: ${recipe.ingredients.join('\n')}
+  Steps: ${recipe.steps.join('\n')}
   PrepTime: ${recipe.prepTime}`;
 
   try {

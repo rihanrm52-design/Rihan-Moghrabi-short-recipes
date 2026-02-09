@@ -1,5 +1,5 @@
 
-// Version 2.4.0 - Automatic Sync & Camera-Free Implementation
+// Version 2.5.0 - Perfect Bilingual Sync & Clean Gallery Upload
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HashRouter, Routes, Route, Link, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
 import { 
@@ -145,8 +145,12 @@ const RecipeCard: React.FC<{
   const t = TRANSLATIONS[lang];
   const isAdmin = user?.isAdmin;
   const isOwner = user?.id === recipe.userId || user?.nickname === recipe.author;
+  
+  // Use translation if available for the current language, else fallback to original fields
   const translation = recipe.translations?.[lang];
   const displayTitle = translation?.title || recipe.title;
+  const displayPrepTime = translation?.prepTime || recipe.prepTime;
+  const displayCity = translation?.city || recipe.city;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden group relative hover:shadow-md transition-shadow h-full flex flex-col">
@@ -167,8 +171,8 @@ const RecipeCard: React.FC<{
         <div className="p-4">
           <h3 className="font-bold text-stone-800 line-clamp-1 text-lg mb-2">{displayTitle}</h3>
           <div className="flex items-center gap-3 text-xs text-stone-400 uppercase tracking-wide">
-            <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5"/> {translation?.prepTime || recipe.prepTime}</span>
-            <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/> {translation?.city || recipe.city}</span>
+            <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5"/> {displayPrepTime}</span>
+            <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/> {displayCity}</span>
           </div>
         </div>
       </Link>
@@ -515,6 +519,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
     e.preventDefault();
     setSubmitting(true);
     
+    // We strictly await the translation for the other language BEFORE saving
     const recipeBase: Recipe = {
       id: initialData?.id || Date.now().toString(),
       title: formData.title,
@@ -531,7 +536,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
       translations: initialData?.translations || {}
     };
 
-    // SYNC AUTOMATICALLY: Generate translation for the other language before saving
+    // SYNC: Generate translation for the other language so it exists in both from the start
     const otherLang: Language = lang === 'ar' ? 'he' : 'ar';
     try {
       const autoTranslation = await translateRecipeContent(recipeBase, otherLang);
@@ -542,7 +547,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
         };
       }
     } catch (err) {
-      console.error("Background sync translation failed:", err);
+      console.error("Critical background sync translation failed:", err);
     }
 
     await onSubmit(recipeBase);
