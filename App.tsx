@@ -1,5 +1,5 @@
 
-// Version 2.5.0 - Perfect Bilingual Sync & Clean Gallery Upload
+// Version 2.6.0 - High-Accuracy Bilingual Sync & Auto-Translation
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HashRouter, Routes, Route, Link, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
 import { 
@@ -43,7 +43,7 @@ const compressImage = (file: File): Promise<string> => {
 
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const MAX_WIDTH = 1200; 
+      const MAX_WIDTH = 1000; 
       let width = img.width;
       let height = img.height;
 
@@ -61,7 +61,7 @@ const compressImage = (file: File): Promise<string> => {
       }
       
       ctx.drawImage(img, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
       URL.revokeObjectURL(objectUrl);
       resolve(dataUrl);
     };
@@ -140,17 +140,37 @@ const RecipeCard: React.FC<{
   recipe: Recipe; 
   lang: Language; 
   onDelete?: (id: string) => void; 
+  onUpdate?: (r: Recipe) => void;
   user?: User | null; 
-}> = ({ recipe, lang, onDelete, user }) => {
+}> = ({ recipe, lang, onDelete, onUpdate, user }) => {
   const t = TRANSLATIONS[lang];
+  const [translating, setTranslating] = useState(false);
   const isAdmin = user?.isAdmin;
   const isOwner = user?.id === recipe.userId || user?.nickname === recipe.author;
   
-  // Use translation if available for the current language, else fallback to original fields
   const translation = recipe.translations?.[lang];
   const displayTitle = translation?.title || recipe.title;
   const displayPrepTime = translation?.prepTime || recipe.prepTime;
   const displayCity = translation?.city || recipe.city;
+
+  // Background Auto-fix: if current lang is missing, translate and update DB silently
+  useEffect(() => {
+    if (recipe.originalLang !== lang && !recipe.translations?.[lang] && !translating && onUpdate) {
+      const performAutoTranslate = async () => {
+        setTranslating(true);
+        const result = await translateRecipeContent(recipe, lang);
+        if (result) {
+          const updatedRecipe = {
+            ...recipe,
+            translations: { ...recipe.translations, [lang]: result }
+          };
+          onUpdate(updatedRecipe);
+        }
+        setTranslating(false);
+      };
+      performAutoTranslate();
+    }
+  }, [lang, recipe, translating, onUpdate]);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden group relative hover:shadow-md transition-shadow h-full flex flex-col">
@@ -167,9 +187,16 @@ const RecipeCard: React.FC<{
                <ImageIcon className="w-12 h-12" />
              </div>
           )}
+          {translating && (
+            <div className="absolute inset-0 bg-white/60 flex items-center justify-center backdrop-blur-sm">
+               <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+            </div>
+          )}
         </div>
         <div className="p-4">
-          <h3 className="font-bold text-stone-800 line-clamp-1 text-lg mb-2">{displayTitle}</h3>
+          <h3 className="font-bold text-stone-800 line-clamp-1 text-lg mb-2">
+            {translating ? (lang === 'he' ? 'מתרגם...' : 'جاري الترجمة...') : displayTitle}
+          </h3>
           <div className="flex items-center gap-3 text-xs text-stone-400 uppercase tracking-wide">
             <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5"/> {displayPrepTime}</span>
             <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/> {displayCity}</span>
@@ -285,7 +312,7 @@ const App: React.FC = () => {
         <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
           <Routes>
             <Route path="/" element={<HomeView lang={lang} />} />
-            <Route path="/category/:catId" element={<CategoryView recipes={recipes} lang={lang} onDelete={handleDelete} user={user} />} />
+            <Route path="/category/:catId" element={<CategoryView recipes={recipes} lang={lang} onDelete={handleDelete} onUpdate={handleUpdate} user={user} />} />
             <Route path="/recipe/:id" element={<RecipeDetail recipes={recipes} lang={lang} user={user} onDelete={handleDelete} onUpdate={handleUpdate} />} />
             <Route path="/add-recipe" element={user ? <RecipeForm lang={lang} user={user} title={TRANSLATIONS[lang].addRecipe} onSubmit={handleAddRecipe} /> : <Navigate to="/auth/login" />} />
             <Route path="/edit-recipe/:id" element={<EditView recipes={recipes} lang={lang} user={user} onUpdate={handleUpdate} />} />
@@ -325,7 +352,7 @@ const HomeView: React.FC<{ lang: Language }> = ({ lang }) => (
   </div>
 );
 
-const CategoryView = ({ recipes, lang, onDelete, user }: any) => {
+const CategoryView = ({ recipes, lang, onDelete, onUpdate, user }: any) => {
   const { catId } = useParams();
   const t = TRANSLATIONS[lang];
   const filtered = recipes.filter((r: any) => r.category === catId);
@@ -345,7 +372,9 @@ const CategoryView = ({ recipes, lang, onDelete, user }: any) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filtered.map((r: any) => <RecipeCard key={r.id} recipe={r} lang={lang} onDelete={onDelete} user={user} />)}
+          {filtered.map((r: any) => (
+            <RecipeCard key={r.id} recipe={r} lang={lang} onDelete={onDelete} onUpdate={onUpdate} user={user} />
+          ))}
           <Link to="/add-recipe" state={{ category: catId }} className="border-2 border-dashed border-stone-300 rounded-xl flex flex-col items-center justify-center p-8 hover:bg-stone-50 transition-colors group">
             <Plus className="w-10 h-10 text-stone-300 mb-2 group-hover:scale-110 transition-transform" />
             <span className="text-stone-400 font-bold">{t.addRecipe}</span>
@@ -377,10 +406,11 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
     setTranslating(true);
     const result = await translateRecipeContent(recipe, lang);
     if (result) {
-      await onUpdate({ 
+      const updated = { 
         ...recipe, 
         translations: { ...recipe.translations, [lang]: result } 
-      });
+      };
+      await onUpdate(updated);
     }
     setTranslating(false);
   }, [recipe, lang, onUpdate, translating]);
@@ -410,9 +440,9 @@ const RecipeDetail = ({ recipes, lang, user, onDelete, onUpdate }: any) => {
         </div>
         <div className="p-6 sm:p-12">
           <div className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-4 border-b border-stone-100 pb-8">
-            <div>
+            <div className="flex-1">
               <h1 className="text-3xl sm:text-5xl font-bold vintage-header text-amber-900 mb-4">
-                {translating ? <span className="flex items-center gap-2 italic text-stone-400 text-2xl">{t.translating}...</span> : translation.title}
+                {translating ? (lang === 'he' ? 'מתרגם...' : 'جاري الترجمة...') : translation.title}
               </h1>
               <div className="flex flex-wrap gap-4 text-sm text-stone-500">
                 <span className="flex items-center gap-1.5 bg-stone-50 px-3 py-1.5 rounded-lg border border-stone-100"><Clock className="w-4 h-4 text-amber-600"/> {t.time}: <b>{translation.prepTime}</b></span>
@@ -519,7 +549,6 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
     e.preventDefault();
     setSubmitting(true);
     
-    // We strictly await the translation for the other language BEFORE saving
     const recipeBase: Recipe = {
       id: initialData?.id || Date.now().toString(),
       title: formData.title,
@@ -536,7 +565,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
       translations: initialData?.translations || {}
     };
 
-    // SYNC: Generate translation for the other language so it exists in both from the start
+    // Aggressively sync: generate translation for the OTHER language right now
     const otherLang: Language = lang === 'ar' ? 'he' : 'ar';
     try {
       const autoTranslation = await translateRecipeContent(recipeBase, otherLang);
@@ -547,7 +576,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
         };
       }
     } catch (err) {
-      console.error("Critical background sync translation failed:", err);
+      console.error("Auto-sync translation failed during submission:", err);
     }
 
     await onSubmit(recipeBase);
@@ -626,7 +655,7 @@ const RecipeForm = ({ lang, user, initialData, onSubmit, title }: any) => {
         
         <button type="submit" disabled={submitting} className="w-full py-4 bg-amber-700 text-white font-bold rounded-xl text-lg hover:bg-amber-800 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer">
           {submitting && <Loader2 className="animate-spin w-6 h-6" />}
-          {submitting ? t.translating : t.submit}
+          {submitting ? (lang === 'he' ? 'מסנכרן ומתרגם...' : 'جاري المزامنة والترجمة...') : t.submit}
         </button>
       </form>
     </div>

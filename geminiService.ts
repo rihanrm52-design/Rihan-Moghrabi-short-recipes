@@ -44,22 +44,23 @@ export async function translateRecipeContent(recipe: Recipe, targetLang: 'ar' | 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const model = 'gemini-3-flash-preview';
   
-  // High-precision prompt for bilingual sync
-  const prompt = `You are a professional culinary translator. Translate this recipe from ${recipe.originalLang === 'ar' ? 'Arabic' : 'Hebrew'} to ${targetLang === 'ar' ? 'Arabic' : 'Hebrew'}.
-  
-  STRICT RULES:
-  1. Translate the Title, Ingredients, and Steps accurately.
-  2. TRANSLITERATE the Author's name and the City name into the ${targetLang === 'ar' ? 'Arabic alphabet' : 'Hebrew alphabet'}. (e.g., "Ali" -> "עלי", "Haifa" -> "חיפה").
-  3. Translate the PrepTime (e.g., "10 minutes" -> "10 דקות").
-  4. Maintain the professional yet simple tone of a "Lazy Recipes" site.
-  5. Return ONLY a valid JSON object.
+  const prompt = `You are a professional translator specializing in culinary content between Arabic and Hebrew. 
+  Translate the following recipe into ${targetLang === 'ar' ? 'Arabic' : 'Hebrew'}.
 
-  DATA TO TRANSLATE:
+  CRITICAL RULES:
+  1. TITLE: Translate the recipe title.
+  2. INGREDIENTS & STEPS: Translate these accurately.
+  3. PREP TIME: Translate (e.g., "10 min" -> "10 דקות" or "10 دقائق").
+  4. AUTHOR NAME: You MUST write the author's name using the ${targetLang === 'ar' ? 'Arabic' : 'Hebrew'} alphabet (Transliteration). Do NOT leave it in the original language.
+  5. CITY NAME: You MUST write the city name using the ${targetLang === 'ar' ? 'Arabic' : 'Hebrew'} alphabet (Transliteration). For example, "חיפה" becomes "حيفا" and "جدة" becomes "ג'דה".
+  6. Response MUST be a clean JSON object matching the schema.
+
+  DATA:
   Title: ${recipe.title}
   Author: ${recipe.author}
   City: ${recipe.city}
-  Ingredients: ${recipe.ingredients.join('\n')}
-  Steps: ${recipe.steps.join('\n')}
+  Ingredients: ${recipe.ingredients.join(' | ')}
+  Steps: ${recipe.steps.join(' | ')}
   PrepTime: ${recipe.prepTime}`;
 
   try {
@@ -89,7 +90,8 @@ export async function translateRecipeContent(recipe: Recipe, targetLang: 'ar' | 
       }
     });
 
-    return JSON.parse(response.text || '{}');
+    const parsed = JSON.parse(response.text || '{}');
+    return parsed;
   } catch (error) {
     console.error("Gemini Translation Error:", error);
     return null;
